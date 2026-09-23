@@ -21,11 +21,23 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Verify project files exist
+      run: |
+        echo "Checking for required files..."
+        ls -la
+        if [ ! -f "config.xml" ]; then
+          echo "ERROR: config.xml is missing!"
+          exit 1
+        fi
+        if [ ! -f "package.json" ]; then
+          echo "ERROR: package.json is missing!"
+          exit 1
+        fi
+        
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        # Removed 'cache: npm' to prevent lock file errors
         
     - name: Setup Java 17
       uses: actions/setup-java@v4
@@ -48,19 +60,19 @@ jobs:
     - name: Install npm dependencies
       run: |
         npm install
-        npm install -g cordova
         
-    - name: Add Android platform
+    - name: Prepare Cordova Project
       run: |
-        cordova platform add android@12
+        # This reads package.json and config.xml and sets up the android platform automatically
+        npx cordova prepare
         
     - name: Build Debug APK
       run: |
-        cordova build android --debug
+        npx cordova build android --debug
         
     - name: Build Release APK (unsigned)
       run: |
-        cordova build android --release
+        npx cordova build android --release
         
     - name: List APK outputs
       run: |
@@ -75,7 +87,7 @@ jobs:
         name: crystal-quest-debug-apk
         path: platforms/android/app/build/outputs/apk/debug/*.apk
         retention-days: 30
-        if-no-files-found: warn
+        if-no-files-found: error
         
     - name: Upload Release APK
       uses: actions/upload-artifact@v4
@@ -83,4 +95,4 @@ jobs:
         name: crystal-quest-release-apk
         path: platforms/android/app/build/outputs/apk/release/*.apk
         retention-days: 30
-        if-no-files-found: warn
+        if-no-files-found: error
