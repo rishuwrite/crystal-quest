@@ -8,12 +8,7 @@
     "build:android": "npx cordova build android",
     "build:apk": "npx cordova build android --release"
   },
-  "keywords": [
-    "puzzle",
-    "game",
-    "cordova",
-    "android"
-  ],
+  "keywords": ["puzzle", "game", "cordova", "android"],
   "author": "Crystal Quest Team",
   "license": "MIT",
   "engines": {
@@ -22,13 +17,11 @@
   },
   "devDependencies": {
     "cordova": "12.0.0",
-    "cordova-android": "12.0.1",
+    "cordova-android": "13.0.1",
     "http-server": "^14.1.1"
   },
   "cordova": {
-    "platforms": [
-      "android"
-    ],
+    "platforms": ["android"],
     "plugins": []
   }
 }
