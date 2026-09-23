@@ -3,8 +3,6 @@ name: Build Android APK
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
   workflow_dispatch:
 
 env:
@@ -21,16 +19,23 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Verify project files exist
+    - name: 🔍 DEBUG: Check Project Structure
       run: |
-        echo "Checking for required files..."
+        echo "=== ROOT DIRECTORY CONTENTS ==="
         ls -la
-        if [ ! -f "config.xml" ]; then
-          echo "ERROR: config.xml is missing!"
+        echo "=== CONFIG.XML CHECK ==="
+        if [ -f "config.xml" ]; then
+          echo "✅ config.xml EXISTS!"
+          head -n 5 config.xml
+        else
+          echo "❌ FATAL ERROR: config.xml is MISSING from the root directory!"
           exit 1
         fi
-        if [ ! -f "package.json" ]; then
-          echo "ERROR: package.json is missing!"
+        echo "=== PACKAGE.JSON CHECK ==="
+        if [ -f "package.json" ]; then
+          echo "✅ package.json EXISTS!"
+        else
+          echo "❌ FATAL ERROR: package.json is MISSING!"
           exit 1
         fi
         
@@ -49,7 +54,7 @@ jobs:
       run: |
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
         
-    - name: Install required Android SDK packages
+    - name: Install Android SDK packages
       run: |
         $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
           "platforms;android-33" \
@@ -57,37 +62,18 @@ jobs:
           "build-tools;33.0.0" \
           "cmdline-tools;latest"
           
-    - name: Install npm dependencies
+    - name: Install Dependencies
       run: |
         npm install
         
-    - name: Prepare Cordova Project
+    - name: Add Android Platform
       run: |
-        # This reads package.json and config.xml and sets up the android platform automatically
-        npx cordova prepare
+        # This will now work because we verified config.xml exists
+        npx cordova platform add android
         
-    - name: Build Debug APK
-      run: |
-        npx cordova build android --debug
-        
-    - name: Build Release APK (unsigned)
+    - name: Build Release APK
       run: |
         npx cordova build android --release
-        
-    - name: List APK outputs
-      run: |
-        echo "=== Debug APK ==="
-        ls -la platforms/android/app/build/outputs/apk/debug/ || echo "Debug APK not found"
-        echo "=== Release APK ==="
-        ls -la platforms/android/app/build/outputs/apk/release/ || echo "Release APK not found"
-        
-    - name: Upload Debug APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: crystal-quest-debug-apk
-        path: platforms/android/app/build/outputs/apk/debug/*.apk
-        retention-days: 30
-        if-no-files-found: error
         
     - name: Upload Release APK
       uses: actions/upload-artifact@v4
