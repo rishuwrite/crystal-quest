@@ -2,7 +2,9 @@ name: Build Android APK
 
 on:
   push:
-    branches: [main, master]
+    branches:
+      - main
+      - master
   workflow_dispatch:
 
 permissions:
@@ -18,7 +20,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -38,33 +40,48 @@ jobs:
           gradle-version: "8.7"
 
       - name: Configure Android SDK
+        shell: bash
         run: |
+          set -e
+
           SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
 
           if [ ! -x "$SDKMANAGER" ]; then
-            SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+            SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" \
+              -name sdkmanager \
+              -type f \
+              -perm -111 \
+              | head -n 1)"
           fi
 
-          test -n "$SDKMANAGER"
-          test -f "$SDKMANAGER"
+          if [ -z "$SDKMANAGER" ] || [ ! -f "$SDKMANAGER" ]; then
+            echo "Android sdkmanager was not found."
+            find "$ANDROID_HOME" -name sdkmanager -type f || true
+            exit 1
+          fi
 
           echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
           echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
           echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
 
       - name: Accept Android licenses
+        shell: bash
         run: |
           yes | "$SDKMANAGER" --licenses >/dev/null || true
 
       - name: Install Android SDK packages
+        shell: bash
         run: |
-          "$SDKMANAGER" "platform-tools" \
+          "$SDKMANAGER" \
+            "platform-tools" \
             "platforms;android-33" \
             "build-tools;33.0.2"
 
       - name: Verify project files
+        shell: bash
         run: |
           set -eux
+
           test -f config.xml
           test -f package.json
           test -f index.html
@@ -72,19 +89,26 @@ jobs:
           test -f puzzle-generator.js
           test -f styles.css
 
-      - name: Install dependencies
+      - name: Install npm dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Prepare Cordova www directory
+      - name: Prepare Cordova web files
+        shell: bash
         run: |
           set -eux
+
           rm -rf www
           mkdir -p www
-          cp index.html www/
-          cp game.js www/
-          cp puzzle-generator.js www/
-          cp styles.css www/
+
+          cp index.html www/index.html
+          cp game.js www/game.js
+          cp puzzle-generator.js www/puzzle-generator.js
+          cp styles.css www/styles.css
+
           test -f www/index.html
+          test -f www/game.js
+          test -f www/puzzle-generator.js
+          test -f www/styles.css
 
       - name: Add Android platform
         run: npx --no-install cordova platform add android@12.0.1 --no-telemetry
@@ -95,10 +119,40 @@ jobs:
       - name: Build release APK
         run: npx --no-install cordova build android --release --no-telemetry
 
-      - name: Upload APK
+      - name: Locate generated APK
+        shell: bash
+        run: |
+          set -eux
+
+          echo "Searching for generated APK files..."
+
+          find . -type f -name "*.apk" \
+            -not -path "./.git/*" \
+            -print
+
+          APK_PATH="$(find platforms -type f -name "*.apk" \
+            -not -path "*/build/intermediates/*" \
+            | head -n 1)"
+
+          if [ -z "$APK_PATH" ]; then
+            echo "No APK was generated."
+            find platforms -type f | sort || true
+            exit 1
+          fi
+
+          echo "Found APK: $APK_PATH"
+
+          rm -rf artifact
+          mkdir -p artifact
+          cp "$APK_PATH" artifact/crystal-quest-release.apk
+
+          test -f artifact/crystal-quest-release.apk
+          ls -lh artifact/crystal-quest-release.apk
+
+      - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:
           name: crystal-quest-release-apk
-          path: platforms/android/app/build/outputs/apk/release/*.apk
+          path: artifact/crystal-quest-release.apk
           if-no-files-found: error
           retention-days: 30
