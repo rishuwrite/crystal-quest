@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+env:
+  ANDROID_HOME: /usr/local/lib/android/sdk
+  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
 jobs:
   build:
     name: Build APK
@@ -28,12 +32,31 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Configure Android SDK
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          fi
+
+          if [ -z "$SDKMANAGER" ] || [ ! -f "$SDKMANAGER" ]; then
+            echo "Android sdkmanager was not found"
+            find "$ANDROID_HOME" -maxdepth 5 -type f -name sdkmanager || true
+            exit 1
+          fi
+
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+          echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+
+      - name: Accept Android licenses
+        run: |
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
 
       - name: Install Android SDK packages
         run: |
-          sdkmanager "platform-tools" \
+          "$SDKMANAGER" "platform-tools" \
             "platforms;android-33" \
             "build-tools;33.0.2"
 
@@ -59,6 +82,7 @@ jobs:
           cp game.js www/
           cp puzzle-generator.js www/
           cp styles.css www/
+          test -f www/index.html
 
       - name: Add Android platform
         run: npx --no-install cordova platform add android@12.0.1 --no-telemetry
