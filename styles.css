@@ -1,0 +1,434 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    overflow-x: hidden;
+    touch-action: manipulation;
+}
+
+#game-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.95);
+    min-height: 100vh;
+    border-radius: 20px;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.2);
+}
+
+/* Header */
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 10px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border-radius: 15px;
+    margin-bottom: 15px;
+    color: white;
+}
+
+.header-left, .header-right {
+    flex: 1;
+}
+
+.header-center {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex: 2;
+}
+
+.level-info, .score-info, .difficulty-info {
+    text-align: center;
+}
+
+.label {
+    display: block;
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.value {
+    display: block;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.difficulty-info .value.hard {
+    color: #ffd700;
+}
+
+.icon-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 24px;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.icon-btn:active {
+    transform: scale(0.9);
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Crystal Collection */
+.crystal-collection {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    border-radius: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.crystals-to-place {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.crystal-item {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.crystal-item.selected {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+}
+
+.crystal-item.placed {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.mistakes-counter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mistake-label {
+    font-size: 14px;
+    font-weight: bold;
+    color: #555;
+}
+
+.mistake-hearts {
+    display: flex;
+    gap: 5px;
+}
+
+.heart {
+    font-size: 24px;
+    transition: all 0.3s;
+}
+
+.heart.lost {
+    opacity: 0.3;
+    filter: grayscale(100%);
+}
+
+/* Rules */
+.rules-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.rule-box {
+    flex: 1;
+    min-width: 150px;
+    padding: 10px;
+    background: white;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.rule-icon {
+    font-size: 20px;
+}
+
+/* Grid */
+.grid-container {
+    display: grid;
+    gap: 2px;
+    background: #ddd;
+    padding: 2px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    aspect-ratio: 1;
+}
+
+.grid-cell {
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    user-select: none;
+}
+
+.grid-cell:hover {
+    background: #f0f0f0;
+}
+
+.grid-cell.selected {
+    background: #e3f2fd;
+    box-shadow: inset 0 0 10px rgba(33, 150, 243, 0.5);
+}
+
+.grid-cell.marked {
+    background: #ffebee;
+}
+
+.grid-cell.marked::after {
+    content: '✕';
+    position: absolute;
+    font-size: 20px;
+    color: #f44336;
+    opacity: 0.6;
+}
+
+.grid-cell.crystal {
+    animation: placeCrystal 0.5s ease;
+}
+
+.grid-cell.hint-reveal {
+    animation: hintPulse 1s ease;
+    background: #fff9c4;
+}
+
+.grid-cell.check-correct {
+    background: #c8e6c9;
+    animation: correctPulse 0.5s ease;
+}
+
+.grid-cell.check-wrong {
+    background: #ffcdd2;
+    animation: shake 0.5s ease;
+}
+
+@keyframes placeCrystal {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+
+@keyframes hintPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+@keyframes correctPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* Hints */
+.hints-container {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.hint-btn {
+    flex: 1;
+    min-width: 100px;
+    padding: 15px 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 15px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.3s;
+    position: relative;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.hint-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.4);
+}
+
+.hint-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.hint-icon {
+    font-size: 32px;
+}
+
+.hint-text {
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.hint-count {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #f44336;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Modals */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.modal-overlay.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+    animation: modalAppear 0.3s ease;
+}
+
+@keyframes modalAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.modal-content h2 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.modal-content p {
+    margin-bottom: 20px;
+    color: #666;
+    line-height: 1.6;
+}
+
+.primary-btn, .secondary-btn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 5px;
+    transition: all 0.3s;
+}
+
+.primary-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.secondary-btn {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.primary-btn:active, .secondary-btn:active {
+    transform: scale(0.95);
+}
+
+.stars {
+    font-size: 48px;
+    margin: 20px 0;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .header-center {
+        gap: 10px;
+    }
+    
+    .value {
+        font-size: 18px;
+    }
+    
+    .rule-box {
+        font-size: 11px;
+    }
+    
+    .hint-text {
+        font-size: 11px;
+    }
+}
+
+/* Color themes for crystals */
+.crystal-red { background: linear-gradient(135deg, #ff6b6b, #ee5a6f); }
+.crystal-blue { background: linear-gradient(135deg, #4ecdc4, #44a3aa); }
+.crystal-green { background: linear-gradient(135deg, #95e1d3, #6ab04c); }
+.crystal-yellow { background: linear-gradient(135deg, #f9ca24, #f0932b); }
+.crystal-purple { background: linear-gradient(135deg, #a29bfe, #6c5ce7); }
+.crystal-orange { background: linear-gradient(135deg, #fdcb6e, #e17055); }
+.crystal-pink { background: linear-gradient(135deg, #fd79a8, #e84393); }
+.crystal-cyan { background: linear-gradient(135deg, #00cec9, #00b894); }

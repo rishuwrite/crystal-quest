@@ -1,0 +1,24 @@
+{
+  "name": "crystal-quest",
+  "version": "1.0.0",
+  "description": "Crystal Quest - Puzzle Game",
+  "main": "index.js",
+  "scripts": {
+    "start": "npx http-server -p 8080",
+    "build:android": "cordova build android",
+    "build:apk": "cordova build android --release"
+  },
+  "keywords": ["puzzle", "game", "cordova", "android"],
+  "author": "Crystal Quest Team",
+  "license": "MIT",
+  "devDependencies": {
+    "cordova": "^12.0.0",
+    "cordova-android": "^12.0.0"
+  },
+  "cordova": {
+    "platforms": [
+      "android"
+    ],
+    "plugins": []
+  }
+}
