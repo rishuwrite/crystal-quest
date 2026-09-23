@@ -2,71 +2,79 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
 
-env:
-  ANDROID_HOME: /usr/local/lib/android/sdk
-  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-  JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
+permissions:
+  contents: read
 
 jobs:
   build:
     name: Build APK
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Verify files exist
-      run: |
-        echo "=== Checking files ==="
-        ls -la
-        if [ ! -f "config.xml" ]; then
-          echo "ERROR: config.xml missing!"
-          exit 1
-        fi
-        if [ ! -f "package.json" ]; then
-          echo "ERROR: package.json missing!"
-          exit 1
-        fi
-        
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        
-    - name: Setup Java 17
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-        
-    - name: Accept Android licenses
-      run: |
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-        
-    - name: Install SDK packages
-      run: |
-        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
-          "platforms;android-33" \
-          "platform-tools" \
-          "build-tools;33.0.0"
-          
-    - name: Install dependencies
-      run: npm install
-      
-    - name: Add Android platform
-      run: npx cordova platform add android
-      
-    - name: Build Release APK
-      run: npx cordova build android --release
-      
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: crystal-quest-release-apk
-        path: platforms/android/app/build/outputs/apk/release/*.apk
-        retention-days: 30
-        if-no-files-found: error
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager "platform-tools" \
+            "platforms;android-33" \
+            "build-tools;33.0.2"
+
+      - name: Verify project files
+        run: |
+          set -eux
+          test -f config.xml
+          test -f package.json
+          test -f index.html
+          test -f game.js
+          test -f puzzle-generator.js
+          test -f styles.css
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Prepare Cordova www directory
+        run: |
+          set -eux
+          rm -rf www
+          mkdir -p www
+          cp index.html www/
+          cp game.js www/
+          cp puzzle-generator.js www/
+          cp styles.css www/
+          test -f www/index.html
+
+      - name: Add Android platform
+        run: npx --no-install cordova platform add android@12.0.1 --no-telemetry
+
+      - name: Check Android requirements
+        run: npx --no-install cordova requirements
+
+      - name: Build release APK
+        run: npx --no-install cordova build android --release --no-telemetry
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-quest-release-apk
+          path: platforms/android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 30
