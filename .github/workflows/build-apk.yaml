@@ -106,7 +106,7 @@ jobs:
       - name: Add compatible Android platform
         shell: bash
         run: |
-          npx --no-install cordova platform add android@13.0.1 --no-telemetry
+          npx --no-install cordova platform add android@13.0.0 --no-telemetry
 
       - name: Force Gradle 8.7
         shell: bash
