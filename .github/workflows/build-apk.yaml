@@ -16,7 +16,7 @@ env:
 
 jobs:
   build:
-    name: Build APK
+    name: Build Debug APK
     runs-on: ubuntu-22.04
 
     steps:
@@ -34,11 +34,6 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Setup Gradle 8.7
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.7"
-
       - name: Configure Android SDK
         shell: bash
         run: |
@@ -50,7 +45,6 @@ jobs:
             SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" \
               -name sdkmanager \
               -type f \
-              -perm -111 \
               | head -n 1)"
           fi
 
@@ -116,27 +110,26 @@ jobs:
       - name: Check Android requirements
         run: npx --no-install cordova requirements
 
-      - name: Build release APK
-        run: npx --no-install cordova build android --release --no-telemetry
+      - name: Build debug APK
+        run: npx --no-install cordova build android --debug --no-telemetry
 
-      - name: Locate generated APK
+      - name: Find generated APK
         shell: bash
         run: |
           set -eux
 
-          echo "Searching for generated APK files..."
+          echo "Generated Android files:"
+          find platforms/android -type f \( -name "*.apk" -o -name "*.aab" \) -print
 
-          find . -type f -name "*.apk" \
-            -not -path "./.git/*" \
-            -print
-
-          APK_PATH="$(find platforms -type f -name "*.apk" \
-            -not -path "*/build/intermediates/*" \
+          APK_PATH="$(find platforms/android \
+            -type f \
+            -name "*.apk" \
+            -print \
             | head -n 1)"
 
           if [ -z "$APK_PATH" ]; then
             echo "No APK was generated."
-            find platforms -type f | sort || true
+            find platforms/android -type f | sort
             exit 1
           fi
 
@@ -144,15 +137,15 @@ jobs:
 
           rm -rf artifact
           mkdir -p artifact
-          cp "$APK_PATH" artifact/crystal-quest-release.apk
+          cp "$APK_PATH" artifact/crystal-quest-debug.apk
 
-          test -f artifact/crystal-quest-release.apk
-          ls -lh artifact/crystal-quest-release.apk
+          test -f artifact/crystal-quest-debug.apk
+          ls -lh artifact/crystal-quest-debug.apk
 
-      - name: Upload release APK
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: crystal-quest-release-apk
-          path: artifact/crystal-quest-release.apk
+          name: crystal-quest-debug-apk
+          path: artifact/crystal-quest-debug.apk
           if-no-files-found: error
           retention-days: 30
