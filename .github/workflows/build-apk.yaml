@@ -21,7 +21,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: npm
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
@@ -60,7 +59,6 @@ jobs:
           cp game.js www/
           cp puzzle-generator.js www/
           cp styles.css www/
-          test -f www/index.html
 
       - name: Add Android platform
         run: npx --no-install cordova platform add android@12.0.1 --no-telemetry
