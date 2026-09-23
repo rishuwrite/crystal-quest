@@ -96,20 +96,19 @@ jobs:
           cp puzzle-generator.js www/puzzle-generator.js
           cp styles.css www/styles.css
 
-      - name: Remove old Android platform
+      - name: Clean stale Cordova project
         shell: bash
         run: |
           set -e
-          if [ -d platforms/android ]; then
-            npx --no-install cordova platform remove android --no-telemetry || true
-          fi
+          rm -rf platforms plugins
+          rm -rf .gradle
 
       - name: Add compatible Android platform
         shell: bash
         run: |
           npx --no-install cordova platform add android@13.0.1 --no-telemetry
 
-      - name: Force Gradle 8.7 for Cordova Android
+      - name: Force Gradle 8.7
         shell: bash
         run: |
           set -eux
