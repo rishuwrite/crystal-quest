@@ -1,0 +1,75 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Install Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Install dependencies
+      run: |
+        npm install
+        npm install -g cordova
+        
+    - name: Add Android platform
+      run: |
+        cordova platform add android
+        
+    - name: Build APK (Debug)
+      run: |
+        cordova build android
+        
+    - name: Build APK (Release)
+      run: |
+        cordova build android --release
+        
+    - name: Create unsigned APK
+      run: |
+        cd platforms/android/app/build/outputs/apk/release
+        ls -la
+        
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: crystal-quest-apk
+        path: |
+          platforms/android/app/build/outputs/apk/debug/*.apk
+          platforms/android/app/build/outputs/apk/release/*.apk
+        retention-days: 30
+        
+    - name: Create Release
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          platforms/android/app/build/outputs/apk/release/*.apk
+        tag_name: v${{ github.run_number }}
+        name: Release v${{ github.run_number }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
